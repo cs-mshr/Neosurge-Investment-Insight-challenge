@@ -1,8 +1,12 @@
 package money.neosurge.investment.controller;
 
-import money.neosurge.investment.pojo.request.DataInsertionForm;
-import money.neosurge.investment.pojo.response.DataInsertionResponse;
+import money.neosurge.investment.pojo.request.CompanyDataInsertionForm;
+import money.neosurge.investment.pojo.request.ComparsionForm;
+import money.neosurge.investment.pojo.request.AIPrompt;
+import money.neosurge.investment.pojo.response.ComparisionResponse;
+import money.neosurge.investment.pojo.response.GenAIResponse;
 import money.neosurge.investment.service.ChatGPTService;
+import money.neosurge.investment.service.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,9 +22,22 @@ public class CompanyController {
     @Autowired
     private ChatGPTService chatGPTService;
 
+    @Autowired
+    private CompanyService companyService;
+
     @PostMapping("/insert-company-data")
-    public DataInsertionResponse insertData(@RequestBody DataInsertionForm dataInsertionForm) throws IOException {
-        DataInsertionResponse dataInsertionResponse = chatGPTService.HelpFromGenAI(dataInsertionForm);
+    public GenAIResponse insertData(@RequestBody CompanyDataInsertionForm companyDataInsertionForm) throws IOException {
+        GenAIResponse dataInsertionResponse = chatGPTService.HelpFromGenAI(
+                AIPrompt.builder()
+                        .prompt(companyDataInsertionForm.getData() + companyDataInsertionForm.getPrompt())
+                        .build()
+        );
+        companyService.saveCompanyDetails(companyDataInsertionForm.getCompanyName(),dataInsertionResponse);
         return dataInsertionResponse;
+    }
+
+    @PostMapping("/compare")
+    public ComparisionResponse compare(@RequestBody ComparsionForm comparsionForm) throws IOException {
+        return companyService.compareCompanies(comparsionForm);
     }
 }

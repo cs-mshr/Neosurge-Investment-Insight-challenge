@@ -1,11 +1,14 @@
 package money.neosurge.investment.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import money.neosurge.investment.pojo.enums.Status;
-import money.neosurge.investment.pojo.request.DataInsertionForm;
-import money.neosurge.investment.pojo.response.DataInsertionResponse;
+import money.neosurge.investment.pojo.request.AIPrompt;
+import money.neosurge.investment.pojo.response.GenAIResponse;
 import money.neosurge.investment.service.ChatGPTService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -24,10 +27,9 @@ public class ChatGPTServiceImpl implements ChatGPTService {
     private String apiKey;
 
     @Override
-    public DataInsertionResponse HelpFromGenAI(DataInsertionForm dataInsertionForm) throws IOException {
+    public GenAIResponse HelpFromGenAI(AIPrompt aiPrompt) throws IOException {
 
-        String data = dataInsertionForm.getData();
-        String prompt = "convert the given data in tabular form";
+        String prompt = aiPrompt.getPrompt();
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(360, TimeUnit.SECONDS)
@@ -42,7 +44,7 @@ public class ChatGPTServiceImpl implements ChatGPTService {
                 "    \"stop_sequences\": [],\n" +
                 "    \"model\": \"%s\",\n" +
                 "    \"stream\": false\n" +
-                "  }",prompt+data, model);
+                "  }",prompt, model);
 
         RequestBody body2 = RequestBody.create(mediaType, requestBodyContent);
 
@@ -57,22 +59,37 @@ public class ChatGPTServiceImpl implements ChatGPTService {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String responseBody = response.body().string();
-                return DataInsertionResponse.builder()
+                return GenAIResponse.builder()
                         .status(Status.SUCCESS)
-                        .data(responseBody)
+                        .data(extractResponse(responseBody))
                         .build();
             } else {
-                return DataInsertionResponse.builder()
+                System.out.println(response.code());
+                System.out.println(response.body().string());
+                System.out.println(requestBodyContent);
+                return GenAIResponse.builder()
                         .status(Status.FAILED)
                         .message(response.message().toString())
                         .build();
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return DataInsertionResponse.builder()
+            return GenAIResponse.builder()
                     .status(Status.ERROR)
                     .message(e.getMessage())
                     .build();
+        }
+    }
+
+    private String extractResponse(String jsonData) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(jsonData);
+            System.out.println(root.get("completion").asText());
+            return root.get("completion").asText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class DataInsertionForm {
-    private String companyName;
-    private String data;
+public class AIPrompt {
+    private String prompt;
 }

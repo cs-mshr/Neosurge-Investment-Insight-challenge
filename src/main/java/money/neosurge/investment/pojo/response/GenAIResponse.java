@@ -10,7 +10,7 @@ import money.neosurge.investment.pojo.enums.Status;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class DataInsertionResponse {
+public class GenAIResponse {
     private Status status;
     private String message;
     private String data;
